@@ -1,56 +1,71 @@
 import { mod, clamp, TAU } from "../helpers/math.js"
+import LSystem from "../helpers/l-system.js"
 
 const sketch = (p5) => {
   let settings = {
-    width: 1100,
-    height: 1400,
+    width: 1400,
+    height: 1100,
+    step: 300,
+    angle: TAU * 0.08,
+    x: 700,
+    y: 1100,
   }
 
-  let canvas;
+  const cactusRules = (k) => {
+    let { step, angle } = settings
+
+    if (k === "F") {
+      settings.step = step * clamp(p5.randomGaussian(1, 0.5), 0.7, 0.9)
+
+      new Branch(0, 0, 0.25, -settings.step).draw()
+      new PricklyPearPad(0, 0, 0.25, -settings.step, settings.step * 0.618).draw()
+      p5.translate(0, -settings.step)
+      p5.rotate(p5.randomGaussian(0, TAU * 0.1))
+
+    } else if (k === "+") {
+      p5.rotate(angle)
+
+    } else if (k === "-") {
+      p5.rotate(-angle)
+
+    } else if (k === "[") {
+      p5.push()
+
+    } else if (k === "]") {
+      p5.pop()
+    }
+  }
 
   p5.setup = () => {
     const { width, height } = settings
 
-    canvas = p5.createCanvas(width, height)
+    p5.createCanvas(width, height)
     p5.pixelDensity(2)
     p5.colorMode(p5.HSB)
-
-    p5.noiseDetail(4, 0.9)
-
-    p5.frameRate(1)
     p5.noLoop()
-
   }
 
   p5.draw = () => {
+    let { x, y } = settings
+    
     p5.clear()
-
     p5.background(25, 4, 97)
-    
-    p5.strokeWeight(4)
+    p5.strokeWeight(2)
 
-    branches()
-  }
+    let pricklyPearLSystem = new LSystem('X', [
+      ['X', [
+        'F[+X]F',
+        'F[-X]F',
+      ]],
+      ['F', [
+        'F',
+      ]],
+    ])
 
-  const branches = () => {
-    const { width, height } = settings
-
-    let branches = [
-      new Branch(width * 0.5, height - 10, -0.25, 300)
-    ]
-
-    
-
-    for (let i = 0; i < 4; i++){
-      branches.push(new Branch(branches[i].end.x, branches[i].end.y, branches[i].angle + (p5.randomGaussian(0, 0.05)), branches[i].length - p5.randomGaussian(50, 10)))
-    }
-
-    branches.forEach(branch => {
-      // branch.draw()
-      branch.drawPricklyPearPad()
-    })
-    // console.log(branches)
-    
+    p5.push()
+    p5.translate(x, y)
+    pricklyPearLSystem.render(cactusRules, 5)
+    p5.pop()
   }
 
   class Branch {
@@ -86,36 +101,22 @@ const sketch = (p5) => {
     draw() {
       p5.push();
       p5.stroke('red');
-      p5.strokeWeight(4);
+      p5.strokeWeight(2);
       p5.line(this.start.x, this.start.y, this.end.x, this.end.y);
       p5.pop();
     }
-
-    drawPricklyPearPad() {
-      new PricklyPearPad(this.start.x, this.start.y, this.length * 0.618, this.length, this.angle).draw()
-    }
   }
 
-  class PricklyPearPad {
-    constructor(baseX, baseY, width, height, angle) {
-      this._baseX = baseX
-      this._baseY = baseY
+  class PricklyPearPad extends Branch {
+    constructor(baseX, baseY, angle, length, width) {
+      super(baseX, baseY, angle, length)
       this._width = width
-      this._height = height
-      this._angle = angle
     }
 
     get width() {
       return this._width
     }
 
-    get height() {
-      return this._height
-    }
-
-    get angle() {
-      return this._angle
-    }
 
     get start() {
       return {
@@ -126,7 +127,7 @@ const sketch = (p5) => {
 
     get points() {
       let width = this.width
-      let height = this.height
+      let length = this.length
 
       let baseWidth = 0.1
       let topRoundness = 0.4
@@ -138,32 +139,32 @@ const sketch = (p5) => {
         [0, 0, 0, 0, 0, 0],
 
         [
-          -(width * baseTaper), -(height * 0.1),
+          -(width * baseTaper), -(length * 0.1),
           -(width * baseWidth), 0,
           -(width * baseWidth), 0
         ],
 
         [
-          -(width * 0.5), -(height * sideHeight + height * sideRoundness),
-          -(width * 0.5), -(height * sideHeight - height * sideRoundness),
-          -(width * 0.5), -(height * sideHeight),
+          -(width * 0.5), -(length * sideHeight + length * sideRoundness),
+          -(width * 0.5), -(length * sideHeight - length * sideRoundness),
+          -(width * 0.5), -(length * sideHeight),
         ],
 
         [
           width * topRoundness,
-          -height, -(width * topRoundness),
-          -height, 0, -height
+          -length, -(width * topRoundness),
+          -length, 0, -length
         ],
 
         [
-          (width * 0.5), -(height * sideHeight - height * sideRoundness),
-          (width * 0.5), -(height * sideHeight + height * sideRoundness),
-          (width * 0.5), -(height * sideHeight),
+          (width * 0.5), -(length * sideHeight - length * sideRoundness),
+          (width * 0.5), -(length * sideHeight + length * sideRoundness),
+          (width * 0.5), -(length * sideHeight),
         ],
 
         [
           (width * baseWidth), 0,
-          (width * baseTaper), -(height * 0.1),
+          (width * baseTaper), -(length * 0.1),
           (width * baseWidth), 0
         ],
       ]
@@ -175,7 +176,7 @@ const sketch = (p5) => {
       let points = this.points
 
       p5.push()
-      p5.strokeWeight(5)
+      p5.strokeWeight(2)
       p5.noFill()
       p5.translate(x, y)
       p5.rotate((0.25 * TAU) + (angle * TAU))
@@ -189,7 +190,6 @@ const sketch = (p5) => {
 
       p5.endShape(p5.CLOSE)
       p5.pop()
-
     }
   }
 }
