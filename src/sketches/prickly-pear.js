@@ -8,7 +8,12 @@ const sketch = (p5) => {
     step: 400,
     angle: -TAU * 0.05,
     x: 550,
-    y: 1400,
+    y: 1420,
+  }
+
+  let colors = {
+    surface: [80, 100, 50],
+    edge: [90, 100, 40],
   }
 
   let segmentStack = []
@@ -27,7 +32,7 @@ const sketch = (p5) => {
     if (current === "P" || !parentPad) {
       
       p5.stroke('black')
-      p5.translate(0, 2)
+      p5.translate(0, 7)
       p5.rotate(TAU * p5.randomGaussian(0, 0.03))
       let pad = new PricklyPearPad(0, 0, 0.25, -settings.step, settings.step * 0.618)
       pad.draw()
@@ -63,17 +68,20 @@ const sketch = (p5) => {
   p5.setup = () => {
     const { width, height } = settings
 
+    
+
     p5.createCanvas(width, height)
     p5.pixelDensity(2)
     p5.colorMode(p5.HSB)
     p5.noLoop()
+
+    console.log(p5.drawingContext)
   }
 
   p5.draw = () => {
     let { x, y } = settings
-    
+    p5.drawingContext.globalCompositeOperation = 'destination-over'
     p5.clear()
-    p5.background(25, 4, 97)
     p5.strokeWeight(2)
 
     let pricklyPearLSystem = new LSystem('X', [
@@ -91,10 +99,14 @@ const sketch = (p5) => {
     ])
 
     p5.push()
+    p5.drawingContext.globalCompositeOperation = 'destination-over'
     p5.translate(x, y)
     pricklyPearLSystem.render(cactusRules, 4)
-    // console.log(pricklyPearLSystem)
     p5.pop()
+
+    p5.background(25, 4, 97)
+
+    
   }
 
   class Branch {
@@ -236,8 +248,9 @@ const sketch = (p5) => {
       let points = this.points
 
       p5.push()
-      p5.strokeWeight(2)
-      p5.noFill()
+      p5.fill(...colors.surface)
+      p5.strokeWeight(4)
+      p5.stroke(...colors.edge)
       p5.translate(x, y)
       p5.rotate((0.25 * TAU) + (angle * TAU))
 
