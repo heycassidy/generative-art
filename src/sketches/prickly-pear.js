@@ -3,36 +3,60 @@ import LSystem from "../helpers/l-system.js"
 
 const sketch = (p5) => {
   let settings = {
-    width: 1400,
-    height: 1100,
-    step: 300,
-    angle: TAU * 0.08,
-    x: 700,
-    y: 1100,
+    width: 1100,
+    height: 1400,
+    step: 400,
+    angle: -TAU * 0.05,
+    x: 550,
+    y: 1400,
   }
 
-  const cactusRules = (k) => {
+  let segmentStack = []
+  let branchStack = []
+
+  const cactusRules = (current, previous) => {
     let { step, angle } = settings
 
-    if (k === "F") {
-      settings.step = step * clamp(p5.randomGaussian(1, 0.5), 0.7, 0.9)
+    let parentPad = segmentStack.slice(-1)[0]
 
-      new Branch(0, 0, 0.25, -settings.step).draw()
-      new PricklyPearPad(0, 0, 0.25, -settings.step, settings.step * 0.618).draw()
-      p5.translate(0, -settings.step)
-      p5.rotate(p5.randomGaussian(0, TAU * 0.1))
+    if (!!parentPad) {
+      settings.step = parentPad.length * clamp(p5.randomGaussian(-0.8, 0.2), -0.8, -0.5)
+      // settings.step = parentPad.length * -0.7
+    }
 
-    } else if (k === "+") {
-      p5.rotate(angle)
+    if (current === "P" || !parentPad) {
+      
+      p5.stroke('black')
+      p5.translate(0, 2)
+      p5.rotate(TAU * p5.randomGaussian(0, 0.03))
+      let pad = new PricklyPearPad(0, 0, 0.25, -settings.step, settings.step * 0.618)
+      pad.draw()
+      // p5.rotate(TAU * -0.01)
+      p5.translate(0, -(settings.step))
+      
+      segmentStack.push(pad)
+      // console.log(segmentStack)
+      
 
-    } else if (k === "-") {
-      p5.rotate(-angle)
+    } else if (current === "-" && !['+', '-'].includes(previous)) {
+      const { x, y, angle: branchAngle } = parentPad.branchNormal
+      p5.translate(-x, -y - parentPad.end.y)
+      p5.rotate(branchAngle + (TAU * -0.25))
+    } else if (current === "+" && !['+', '-'].includes(previous)) {
+      const { x, y, angle: branchAngle } = parentPad.branchNormal
+      p5.translate(x, -y - parentPad.end.y)
+      p5.scale(-1, 1)
+      p5.rotate(branchAngle + (TAU * -0.25))
 
-    } else if (k === "[") {
+    } else if (current === "[") {
       p5.push()
+      branchStack.push(segmentStack.slice(-1)[0])
+      // confirm.log(branchStack)
 
-    } else if (k === "]") {
+    } else if (current === "]") {
       p5.pop()
+      segmentStack.push(branchStack.pop())
+
     }
   }
 
@@ -54,17 +78,22 @@ const sketch = (p5) => {
 
     let pricklyPearLSystem = new LSystem('X', [
       ['X', [
-        'F[+X]F',
-        'F[-X]F',
+        'P[-X][+X]',
+        'P[+X][-X]',
+        'P[-X]P[+X][X]',
+        'P[-X][+X][X][+X]',
+        'P[-X]P[+X][X][-X]',
+        // 'X',
       ]],
-      ['F', [
-        'F',
-      ]],
+      ['P', [
+        'P',
+      ]]
     ])
 
     p5.push()
     p5.translate(x, y)
-    pricklyPearLSystem.render(cactusRules, 5)
+    pricklyPearLSystem.render(cactusRules, 4)
+    // console.log(pricklyPearLSystem)
     p5.pop()
   }
 
@@ -170,6 +199,37 @@ const sketch = (p5) => {
       ]
     }
 
+    calculateNormal(i, t = 0.5) {
+      let points = this.points
+
+      let currentAnchor = points[i].slice(-2)
+      let currentControl = points[i].slice(0, 2)
+      let nextAnchor = points[i + 1].slice(-2)
+      let nextControl = points[i + 1].slice(-4, -2)
+
+      let length = 30
+      let x = p5.bezierPoint(currentAnchor[0], currentControl[0], nextControl[0], nextAnchor[0], t)
+      let y = p5.bezierPoint(currentAnchor[1], currentControl[1], nextControl[1], nextAnchor[1], t)
+      let tx = p5.bezierTangent(currentAnchor[0], currentControl[0], nextControl[0], nextAnchor[0], t)
+      let ty = p5.bezierTangent(currentAnchor[1], currentControl[1], nextControl[1], nextAnchor[1], t)
+      let a = Math.atan2(ty, tx) + (TAU * 0.25)
+
+      return { x, y, tx: Math.cos(a) * length + x, ty: Math.sin(a) * length + y, angle: a }
+    }
+
+    get branchNormal() {
+      return this.calculateNormal(3, p5.randomGaussian(0.4, 0.2))
+      // return this.calculateNormal(2, 0.5)
+    }
+
+    drawBranchNormalLine() {
+      const { x, y, tx, ty } = this.branchNormal
+
+      p5.push()
+      p5.line(x, y, tx, ty)
+      p5.pop()
+    }
+
     draw() {
       let { x, y } = this.start
       let angle = this.angle
@@ -185,8 +245,12 @@ const sketch = (p5) => {
       p5.vertex(...points[0])
 
       for (let i = 0; i < points.length - 1; i++) {
-        p5.bezierVertex(...points[i].slice(0, 2), ...points[i + 1].slice(-4))
+        let currentControl = points[i].slice(0, 2)
+        let nextAnchor = points[i + 1].slice(-2)
+        let nextControl = points[i + 1].slice(-4, -2)
+        p5.bezierVertex(...currentControl, ...nextControl, ...nextAnchor)
       }
+      // this.drawBranchNormalLine()
 
       p5.endShape(p5.CLOSE)
       p5.pop()

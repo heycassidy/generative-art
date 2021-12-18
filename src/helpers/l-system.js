@@ -10,9 +10,11 @@ export default class LSystem {
     const rules = this._rules
 
     return [...sentence]
-      .map((word) => rules
-      .reduce((acc, rule) => word === rule[0] ? rule[1][randomIntegerFromInterval(0, rule[1].length - 1)] : acc, word))
-      .join()
+      .map((word) => {
+        return rules.reduce((acc, rule) => {
+          return word === rule[0] ? rule[1][randomIntegerFromInterval(0, rule[1].length - 1)] : acc
+        }, word)
+      }).join('')
   }
 
   computeAxiom(n) {
@@ -25,11 +27,11 @@ export default class LSystem {
     return axiom
   }
 
-  render(func, n) {
+  render(interpreter, n) {
     let axiom = this.computeAxiom(n)
     
-    for (let i = 0; i < axiom.length - 1; i++) {
-      func(axiom[i])
+    for (let i = 0; i < axiom.length; i++) {
+      interpreter(axiom[i], axiom[i - 1])
     }
   }
 }

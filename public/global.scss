@@ -9,7 +9,7 @@ html {
 
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -19,8 +19,8 @@ body {
 .canvas-wrapper {
   overflow: hidden;
   width: auto;
-  width: min(1000px, calc(100vw - 2rem));
-  height: auto;
+  height: 100%;
+  aspect-ratio: 11 / 14;
   
   box-shadow:
   0 0 0 1px hsla(0, 0%, 0%, 0.05),
