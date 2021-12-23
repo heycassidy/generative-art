@@ -1,9 +1,10 @@
 import { randomIntegerFromInterval } from './math.js'
 
 export default class LSystem {
-  constructor(axiom, rules) {
+  constructor(axiom, rules, seed) {
     this._axiom = axiom
     this._rules = rules
+    this._seed = seed
   }
 
   replaceSentence(sentence) {
@@ -12,7 +13,7 @@ export default class LSystem {
     return [...sentence]
       .map((word) => {
         return rules.reduce((acc, rule) => {
-          return word === rule[0] ? rule[1][randomIntegerFromInterval(0, rule[1].length - 1)] : acc
+          return word === rule[0] ? rule[1][randomIntegerFromInterval(0, rule[1].length - 1, this._seed)] : acc
         }, word)
       }).join('')
   }

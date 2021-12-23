@@ -21,6 +21,7 @@
     "p5": "^1.4.0",
     "p5-svelte": "^2.2.2",
     "p5bezier": "^0.2.7",
+    "seedrandom": "^3.0.5",
     "sirv-cli": "^1.0.0"
   },
   "prettier": {
