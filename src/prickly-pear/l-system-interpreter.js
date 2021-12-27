@@ -66,11 +66,19 @@ export default class PricklyPearLSystemInterpreter {
         standardDeviation: 0.2,
         source
       })()
+
+      let length = seededRandomNormal({
+        expectedValue: cladodeLength,
+        standardDeviation: cladodeLength * 0.2,
+        source
+      })()
+
+      length = clamp(length, cladodeLength * 0.5, cladodeLength)
       
       let cladode = new Cladode(paper, {
         basePoint: new paper.Point(paper.view.bounds.bottomCenter.x, paper.view.bounds.bottomCenter.y + cladodeLength * 0.1),
         angle,
-        length: cladodeLength,
+        length,
         width: (0.6311 * cladodeLength) - 5.25,
         source
       })
@@ -87,7 +95,7 @@ export default class PricklyPearLSystemInterpreter {
       const growthOrientation = this.lastGrowthOrientation
 
       let sizeFactor = clamp(seededRandomNormal({
-        expectedValue: -0.025 * Math.pow(this.savedCladodes.length, 2) + 0.7, 
+        expectedValue: -0.02 * Math.pow(this.savedCladodes.length, 2) + 0.8,
         standardDeviation: 0.2,
         source
       })(), 0.3, 0.8)

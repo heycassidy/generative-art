@@ -108,14 +108,14 @@ class Cladode extends Branch {
 
   get mainShape() {
     const paper = this.paper
-    const { start } = this
+    const { start, width } = this
     const { angle } = this.settings
 
     let path = new paper.Path({
       segments: this._segments,
       fillColor: this._colors.surface,
       strokeColor: this._colors.edge,
-      strokeWidth: 10,
+      strokeWidth: paper.view.bounds.width * 0.002,
       closed: true,
     });
 

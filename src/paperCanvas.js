@@ -7,7 +7,7 @@ export default function paperCanvas(node) {
   paper.setup(node);
 
   let pricklyPearDrawing = new PricklyPear(paper, {
-    // source: randomLcg(98)
+    // seed: 23980293
   })
 
   pricklyPearDrawing.render()

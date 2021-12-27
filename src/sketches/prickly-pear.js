@@ -1,3 +1,4 @@
+import { randomLcg } from 'd3-random';
 import LSystem from "../helpers/l-system.js"
 import PricklyPearLSystemInterpreter from "../prickly-pear/l-system-interpreter.js"
 import { inchToPx } from "../helpers/math.js"
@@ -7,17 +8,19 @@ export default class PricklyPear {
     this.paper = paper
 
     this.settings = {...{
-      printDPI: 300,
+      printDPI: 150,
       printWidth: 11.25,
       printHeight: 14.25,
       bleedSize: 0.125,
-      source: null
+      safeArea: 0.375,
+      seed: null
     }, ...settings }
+
+    this.settings.source = !!this.settings.seed ? randomLcg(this.settings.seed) : null
   }
 
   get zoomFactor() {
-    const { printDPI } = this.settings
-    return printDPI / 300
+    return 1
   }
 
   pageSetup() {
@@ -40,7 +43,18 @@ export default class PricklyPear {
     let bottomRight = new paper.Point(paper.view.bounds.bottomRight.x - inchToPx(bleedSize, printDPI), paper.view.bounds.bottomRight.y - inchToPx(bleedSize, printDPI))
     let bleedRectangle = paper.Shape.Rectangle(topLeft, bottomRight)
     bleedRectangle.strokeColor = 'red'
-    bleedRectangle.strokeWidth = 2
+    bleedRectangle.strokeWidth = inchToPx(0.015625, printDPI)
+  }
+
+  drawSafeArea() {
+    const { paper } = this.paper
+    const { safeArea, printDPI } = this.settings
+
+    let topLeft = new paper.Point(inchToPx(safeArea, printDPI), inchToPx(safeArea, printDPI))
+    let bottomRight = new paper.Point(paper.view.bounds.bottomRight.x - inchToPx(safeArea, printDPI), paper.view.bounds.bottomRight.y - inchToPx(safeArea, printDPI))
+    let bleedRectangle = paper.Shape.Rectangle(topLeft, bottomRight)
+    bleedRectangle.strokeColor = 'blue'
+    bleedRectangle.strokeWidth = inchToPx(0.015625, printDPI)
   }
 
   drawCactus() {
@@ -57,10 +71,6 @@ export default class PricklyPear {
       ]],
       ['P', [
         'P',
-        'P',
-        'P',
-        'P',
-        'PP',
       ]]
     ], source)
 
@@ -69,19 +79,19 @@ export default class PricklyPear {
       source
     })
 
-    pricklyPearLSystem.render(interpreter, 2)
+    pricklyPearLSystem.render(interpreter, 3)
   }
 
 
   render() {
     const paper = this.paper
-    const { printHeight, source } = this.settings
 
     this.pageSetup()
     
     this.drawCactus()
 
-    this.drawBleedLines()
+    // this.drawBleedLines()
+    // this.drawSafeArea()
 
     paper.view.draw()
   }
