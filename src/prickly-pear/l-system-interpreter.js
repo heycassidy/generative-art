@@ -1,72 +1,156 @@
-import { clamp, TAU } from "../helpers/math.js"
-import Pear from "./Pear.js"
+import { clamp, TAU, degreesToRadians, seededRandomNormal } from "../helpers/math.js"
+import Cladode from "./Cladode.js"
 
 export default class PricklyPearLSystemInterpreter {
-  constructor(p5, startingSegmentLength) {
-    this.p5 = p5
-    
-    this.branches = []
-    this.segments = []
-    this.pearLength = startingSegmentLength
+  constructor(paper, settings) {
+    this.paper = paper
+
+    this.settings = {...{
+      startingSegmentLength: 100,
+      source: null
+    }, ...settings }
+
+    this.cladodeLength = this.settings.startingSegmentLength
+
+    this.cladodes = []
+    this.savedCladodes = []
+
+    this.growthOrientations = []
+    this.savedGrowthOrientations = []
 
     return this.interpreter
   }
 
+  addCladode(cladode) {
+    this.cladodes.push(cladode)
+  }
+
+  get lastCladode() {
+    return this.cladodes.slice(-1)[0]
+  }
+
+  saveCladode(cladode) {
+    this.savedCladodes.push(cladode)
+  }
+
+  restoreLastSavedCladode() {
+    this.cladodes.push(this.savedCladodes.pop())
+  }
+
+  addGrowthOrientation(growthOrientation) {
+    this.growthOrientations.push(growthOrientation)
+  }
+
+  get lastGrowthOrientation() {
+    return this.growthOrientations.slice(-1)[0]
+  }
+
+  saveGrowthOrientation(growthOrientation) {
+    this.savedGrowthOrientations.push(growthOrientation)
+  }
+
+  restoreLastSavedGrowthOrientation() {
+    this.growthOrientations.push(this.savedGrowthOrientations.pop())
+  }
+
   get interpreter() {
-    let { branches, segments, pearLength, p5 } = this
+    const { paper } = this.paper
+    const { source } = this.settings
+    let { cladodeLength } = this
 
-    const newPear = () => {
-      p5.stroke('black')
-      p5.translate(0, 7)
-      p5.rotate(TAU * p5.randomGaussian(0, 0.03))
+    const rootCladode = () => {
+      const paper = this.paper
 
-      let pad = new Pear(p5, 0, 0, 0.25, -pearLength, (0.6311 * pearLength) - 5.25)
-      pad.draw()
-      p5.translate(0, -(pearLength))
+      let angle = seededRandomNormal({
+        expectedValue: 0,
+        standardDeviation: 0.2,
+        source
+      })()
+      
+      let cladode = new Cladode(paper, {
+        basePoint: new paper.Point(paper.view.bounds.bottomCenter.x, paper.view.bounds.bottomCenter.y + cladodeLength * 0.1),
+        angle,
+        length: cladodeLength,
+        width: (0.6311 * cladodeLength) - 5.25,
+        source
+      })
 
-      segments.push(pad)
+      cladode.draw()
+
+      this.addCladode(cladode)
+      this.addGrowthOrientation([0.45, 0.55])
     }
 
-    const rotateLeft = (parentPear) => {
-      const { x, y, angle: branchAngle } = parentPear.branchNormal(3)
-      p5.translate(-x, -y - parentPear.end.y)
-      p5.rotate(branchAngle + (TAU * -0.25))
+    const newCladode = () => {
+      const paper = this.paper
+      const parent = this.lastCladode
+      const growthOrientation = this.lastGrowthOrientation
+
+      let sizeFactor = clamp(seededRandomNormal({
+        expectedValue: -0.025 * Math.pow(this.savedCladodes.length, 2) + 0.7, 
+        standardDeviation: 0.2,
+        source
+      })(), 0.3, 0.8)
+
+      let growthLocation = parent.randomGrowthLocation(growthOrientation)
+
+      let angle = seededRandomNormal({
+        expectedValue: degreesToRadians(growthLocation.angle) + TAU * -0.25,
+        standardDeviation: TAU * 0.025,
+        source
+      })()
+
+      let cladodeLength = clamp(parent.length * sizeFactor, 30, 1000)
+
+      let cladode = new Cladode(paper, {
+        basePoint: growthLocation.point,
+        angle,
+        length: cladodeLength,
+        width: (0.6311 * cladodeLength) - 5.25,
+        source
+      })
+
+      cladode.draw()
+
+      this.addCladode(cladode)
+      this.addGrowthOrientation([0.47, 0.53])
+
     }
 
-    const rotateRight = (parentPear) => {
-      const { x, y, angle: branchAngle } = parentPear.branchNormal(2)
-      p5.translate(-x, -y - parentPear.end.y)
-      p5.rotate(branchAngle + (TAU * -0.25))
+    const rotateLeft = () => {
+      this.addGrowthOrientation([0.55, 0.65])
+    }
+
+    const rotateRight = () => {
+      this.addGrowthOrientation([0.35, 0.45])
     }
 
     const saveState = () => {
-      p5.push()
-      branches.push(segments.slice(-1)[0])
+      this.saveCladode(this.lastCladode)
+      this.saveGrowthOrientation(this.lastGrowthOrientation)
     }
 
     const restoreState = () => {
-      p5.pop()
-      segments.push(branches.pop())
+      this.restoreLastSavedCladode()
+      this.restoreLastSavedGrowthOrientation()
     }
 
     return function(current, previous) {
-      let parentPear = segments.slice(-1)[0]
+      let parent = this.lastCladode
 
-      let sizeFactor = clamp(p5.randomGaussian(-0.025 * Math.pow(branches.length, 2) + 0.7, 0.2), 0.3, 0.8)
+      if (!parent) {
+        rootCladode()
 
-      if (!!parentPear) {
-        pearLength = clamp(-parentPear.length * sizeFactor, 30, 1000)
-      }
-
-      if ((current === "P" || !parentPear) && pearLength > 30) {
-        newPear()
-
-      } else if (current === "-" && !['+', '-'].includes(previous)) {
-        rotateLeft(parentPear)
+      } else if (current === "P" && !!parent) {
+        newCladode()
         
-      } else if (current === "+" && !['+', '-'].includes(previous)) {
-        rotateRight(parentPear)
-
+      } else if (current === "-") {
+        rotateLeft()
+        
+      } else if (current === "+") {
+        rotateRight()
+        
+        
       } else if (current === "[") {
         saveState()
 
@@ -74,6 +158,7 @@ export default class PricklyPearLSystemInterpreter {
         restoreState()
 
       }
-    }
+
+    }.bind(this)
   }
 }

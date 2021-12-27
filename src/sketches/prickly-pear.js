@@ -1,54 +1,88 @@
 import LSystem from "../helpers/l-system.js"
 import PricklyPearLSystemInterpreter from "../prickly-pear/l-system-interpreter.js"
+import { inchToPx } from "../helpers/math.js"
 
-const sketch = (p5) => {
-  let settings = {
-    width: 1100,
-    height: 1400,
-    x: 550,
-    y: 1480,
-    randomSeed: null,
+export default class PricklyPear {
+  constructor(paper, settings) {
+    this.paper = paper
+
+    this.settings = {...{
+      printDPI: 300,
+      printWidth: 11.25,
+      printHeight: 14.25,
+      bleedSize: 0.125,
+      source: null
+    }, ...settings }
   }
 
-  p5.setup = () => {
-    const { width, height, randomSeed } = settings
-
-    p5.createCanvas(width, height)
-    p5.pixelDensity(2)
-    p5.colorMode(p5.HSB)
-    p5.noLoop()
-    p5.randomSeed(randomSeed)
+  get zoomFactor() {
+    const { printDPI } = this.settings
+    return printDPI / 300
   }
 
-  p5.draw = () => {
-    let { x, y, randomSeed } = settings
-    p5.drawingContext.globalCompositeOperation = 'destination-over'
-    p5.clear()
+  pageSetup() {
+    const { paper } = this.paper
+    const { zoomFactor } = this
+    const { printWidth, printHeight, printDPI } = this.settings
 
+    let posterSize = new paper.Size(printWidth * printDPI, printHeight * printDPI)
+
+    paper.view.setViewSize(posterSize)
+    paper.view.setCenter(posterSize.divide(2 * zoomFactor))
+    paper.view.setScaling(zoomFactor)
+  }
+
+  drawBleedLines() {
+    const { paper } = this.paper
+    const { bleedSize, printDPI } = this.settings
+
+    let topLeft = new paper.Point(inchToPx(bleedSize, printDPI), inchToPx(bleedSize, printDPI))
+    let bottomRight = new paper.Point(paper.view.bounds.bottomRight.x - inchToPx(bleedSize, printDPI), paper.view.bounds.bottomRight.y - inchToPx(bleedSize, printDPI))
+    let bleedRectangle = paper.Shape.Rectangle(topLeft, bottomRight)
+    bleedRectangle.strokeColor = 'red'
+    bleedRectangle.strokeWidth = 2
+  }
+
+  drawCactus() {
+    const { paper } = this.paper
+    const { source, printHeight, printDPI } = this.settings
+    
     let pricklyPearLSystem = new LSystem('P[-X][X][+X]', [
       ['X', [
-        'P[-PX][+X]',
-        'P[-X][+PX]',
+        'P[-X][+X]',
+        'P[-X][+X]',
         'P[-X][+X][X]',
-        'P[-X][+X][PX]',
-        'P[-X][+X][PX][-X]',
+        'P[-X][+X][X]',
+        'P[-X][+X][X][-X]',
       ]],
       ['P', [
         'P',
+        'P',
+        'P',
+        'P',
+        'PP',
       ]]
-    ], randomSeed)
+    ], source)
 
-    let interpreter = new PricklyPearLSystemInterpreter(p5, settings.height * 0.382)
+    let interpreter = new PricklyPearLSystemInterpreter(paper, {
+      startingSegmentLength: inchToPx(printHeight * 0.382, printDPI),
+      source
+    })
 
-    p5.push()
-    p5.translate(x, y)
     pricklyPearLSystem.render(interpreter, 2)
-    p5.pop()
+  }
 
-    p5.background(10, 10, 99)
+
+  render() {
+    const paper = this.paper
+    const { printHeight, source } = this.settings
+
+    this.pageSetup()
+    
+    this.drawCactus()
+
+    this.drawBleedLines()
+
+    paper.view.draw()
   }
 }
-
-export default sketch
-
-

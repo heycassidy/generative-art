@@ -1,19 +1,25 @@
-import { randomIntegerFromInterval } from './math.js'
+import { seededRandomInteger } from './math.js'
 
 export default class LSystem {
-  constructor(axiom, rules, seed) {
+  constructor(axiom, rules, source) {
     this._axiom = axiom
     this._rules = rules
-    this._seed = seed
+    this._source = source
   }
 
   replaceSentence(sentence) {
     const rules = this._rules
 
     return [...sentence]
-      .map((word) => {
+      .map((word, i) => {
         return rules.reduce((acc, rule) => {
-          return word === rule[0] ? rule[1][randomIntegerFromInterval(0, rule[1].length - 1, this._seed)] : acc
+          let randomRule = seededRandomInteger({
+            min: 0,
+            max: rule[1].length,
+            source: this._source
+          })()
+
+          return word === rule[0] ? rule[1][randomRule] : acc
         }, word)
       }).join('')
   }

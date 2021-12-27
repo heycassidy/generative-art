@@ -19,7 +19,8 @@ body {
 .canvas-wrapper {
   overflow: hidden;
   width: auto;
-  height: 100%;
+  max-height: 90vh;
+  max-width: 90vw;
   aspect-ratio: 11 / 14;
   
   box-shadow:
@@ -35,5 +36,5 @@ body {
 .canvas-wrapper canvas {
   display: block;
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important;
 }

@@ -1,41 +1,43 @@
-import { TAU } from "../helpers/math.js"
-
 export default class Branch {
-  constructor(p5, baseX, baseY, angle, length) {
-    this.p5 = p5
-    this._baseX = baseX
-    this._baseY = baseY
-    this._angle = angle
-    this._length = length
+  constructor(paper, settings) {
+    this.paper = paper
+
+    this.settings = {...{
+      basePoint: new paper.Point(0, 0),
+      angle: 0,
+      length: 100,
+      source: null
+    }, ...settings }
   }
 
   get start() {
-    return {
-      x: this._baseX,
-      y: this._baseY
-    }
+    return this.settings.basePoint
   }
 
   get end() {
-    return {
-      x: (this._length * Math.cos(this._angle * TAU)) + this._baseX,
-      y: (this._length * Math.sin(this._angle * TAU)) + this._baseY 
-    }
+    const paper = this.paper
+    const { basePoint, angle, length } = this.settings
+
+    return new paper.Point(length * Math.cos(angle) + basePoint.x, length * Math.sin(angle) + basePoint.y)
   }
 
   get angle() {
-    return this._angle
+    return this.settings.angle
   }
 
   get length() {
-    return this._length
+    return this.settings.length
   }
 
   draw() {
-    this.p5.push();
-    this.p5.stroke('red');
-    this.p5.strokeWeight(2);
-    this.p5.line(this.start.x, this.start.y, this.end.x, this.end.y);
-    this.p5.pop();
+    const paper = this.paper
+    const { start, end } = this
+
+    return new paper.Path.Line({
+      from: start,
+      to: end,
+      strokeColor: 'red',
+      strokeWidth: 4
+    })
   }
 }
