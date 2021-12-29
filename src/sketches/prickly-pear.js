@@ -73,6 +73,18 @@ export default class PricklyPear {
         'P',
       ]]
     ], source)
+    // let pricklyPearLSystem = new LSystem('P[-X][X][+X]', [
+    //   ['X', [
+    //     'P[-X][+X]',
+    //     'P[-X][+X]',
+    //     'P[-X][+X][X]',
+    //     'P[-X][+X][X]',
+    //     'P[-X][+X][X][-X]',
+    //   ]],
+    //   ['P', [
+    //     'P',
+    //   ]]
+    // ], source)
 
     let interpreter = new PricklyPearLSystemInterpreter(paper, {
       startingSegmentLength: inchToPx(printHeight * 0.382, printDPI),
@@ -92,6 +104,8 @@ export default class PricklyPear {
 
     // this.drawBleedLines()
     // this.drawSafeArea()
+
+    console.log(paper)
 
     paper.view.draw()
   }

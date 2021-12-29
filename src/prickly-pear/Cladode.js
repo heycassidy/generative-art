@@ -1,4 +1,4 @@
-import { clamp, radiansToDegrees, degreesToRadians, seededRandomUniform, seededRandomNormal } from "../helpers/math.js"
+import { TAU, clamp, radiansToDegrees, degreesToRadians, seededRandomUniform, seededRandomNormal, polarToCartesian } from "../helpers/math.js"
 import Branch from "./Branch.js"
 
 class Cladode extends Branch {
@@ -11,7 +11,11 @@ class Cladode extends Branch {
 
     this._segments = this.segments
     this._colors = this.colors
-    this._nextGrowthLocation = this.nextGrowthLocation
+
+    this.group = new paper.Group()
+
+    this.mainShape = this.computeMainShape()
+    this.tubercles = this.computeTubercles()
   }
 
   get width() {
@@ -69,11 +73,11 @@ class Cladode extends Branch {
     let cladodeLength = this.length
 
     let offset = path.length * t
-    let normal = path.getNormalAt(offset).multiply(length);
+    let normal = path.getNormalAt(offset).multiply(length)
     let angle = degreesToRadians(normal.angle)
-    let point = path.getPointAt(offset);
+    let point = path.getPointAt(offset)
 
-    // Overlap the cladodes a bit 
+    // Overlap the cladodes a bit
     point = new paper.Point([
       cladodeLength * 0.05 * Math.cos(angle) + point.x,
       cladodeLength * 0.05 * Math.sin(angle) + point.y,
@@ -98,18 +102,78 @@ class Cladode extends Branch {
     return this.growthLocation(t)
   }
 
-  get nextGrowthLocation() {
-    return this._nextGrowthLocation
-  }
-
-  set nextGrowthLocation(growthLocation) {
-    this._nextGrowthLocation = growthLocation
-  }
-
-  get mainShape() {
+  computeTubercles() {
     const paper = this.paper
-    const { start, width } = this
-    const { angle } = this.settings
+    const { mainShape } = this
+    const { source } = this.settings
+
+    let group = new paper.Group()
+    let edgeTubercles = new paper.Group()
+    let surfaceTubercles = new paper.Group()
+    let bounds = mainShape.bounds
+
+    let edgeAreola = new paper.Path.Circle({
+      radius: mainShape.length * 0.003,
+      fillColor: this._colors.edge,
+    })
+    edgeAreola.remove()
+
+    let edgeAreolaDefinition = new paper.SymbolDefinition(edgeAreola)
+    
+    let surfaceAreola = new paper.Path.Circle({
+      radius: mainShape.length * 0.003,
+      fillColor: this._colors.edge,
+    })
+
+    surfaceAreola.remove()
+    let surfaceAreolaDefinition = new paper.SymbolDefinition(surfaceAreola)
+
+
+    let distanceBetweenEdgePoints = seededRandomNormal({
+      expectedValue: 0.05,
+      standardDeviation: 0.01,
+      source
+    })
+
+    // Draw edge tubercles
+    for (let i = 0; i <= 1; i += distanceBetweenEdgePoints()) {
+      let instance = edgeAreolaDefinition.place()
+      instance.position = mainShape.getPointAt(mainShape.length * i)
+      edgeTubercles.addChild(instance)
+    }
+
+    // Draw surface tubercles
+    for (let i = 0; i < 300; i += 1) {
+      let theta = i * degreesToRadians(137.5)
+      let r = bounds.height * 0.0625 * Math.sqrt(i)
+      let cartesian = polarToCartesian(r, theta)
+
+      let point = [
+        seededRandomNormal({ expectedValue: cartesian.x, standardDeviation: mainShape.length * 0.001, source })(),
+        seededRandomNormal({ expectedValue: cartesian.y, standardDeviation: mainShape.length * 0.001, source })(),
+      ]
+
+      if (mainShape.contains([...point])) {
+        let instance = surfaceAreolaDefinition.place()
+        instance.position = [...point]
+        surfaceTubercles.addChild(instance)
+      }
+    }
+
+    group.addChild(edgeTubercles)
+    group.addChild(surfaceTubercles)
+
+    return group
+  }
+  get tubercles() {
+    return this._tubercles
+  }
+  set tubercles(tubercles) {
+    this._tubercles = tubercles
+  }
+
+  computeMainShape() {
+    const paper = this.paper
 
     let path = new paper.Path({
       segments: this._segments,
@@ -117,20 +181,33 @@ class Cladode extends Branch {
       strokeColor: this._colors.edge,
       strokeWidth: paper.view.bounds.width * 0.002,
       closed: true,
+      name: 'mainShape'
     });
 
-    path.pivot = path.bounds.bottomCenter
-    path.position = start
-
-    path.rotate(radiansToDegrees(angle))
     path.smooth({ type: 'continuous', from: 1, to: 5 })
-    path.sendToBack()
+    path.remove()
 
     return path
   }
+  get mainShape() {
+    return this._mainShape
+  }
+  set mainShape(shape) {
+    this._mainShape = shape
+  }
 
   draw() {
-    this.mainShape
+    const { start, group } = this
+    const { angle } = this.settings
+
+    group.addChild(this.mainShape)
+    group.addChild(this.tubercles)
+
+    group.pivot = group.bounds.bottomCenter
+    group.position = start
+    group.rotate(radiansToDegrees(angle))
+
+    this.group.sendToBack()
   }
 }
 
