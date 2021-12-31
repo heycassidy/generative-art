@@ -4,7 +4,7 @@ import PricklyPear from './sketches/prickly-pear.js'
 import { randomLcg } from 'd3-random';
 
 // let seed = Math.random()
-let seed = 0.3735237190243268
+let seed = 0.18451557470591795
 
 console.log(`seed used: ${seed}`)
 

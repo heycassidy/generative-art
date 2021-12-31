@@ -36,9 +36,12 @@ export default class LSystem {
 
   render(interpreter, n) {
     let axiom = this.computeAxiom(n)
+    let segments
     
     for (let i = 0; i < axiom.length; i++) {
-      interpreter(axiom[i], axiom[i - 1])
+      segments = interpreter(axiom[i], axiom[i - 1])
     }
+
+    return segments
   }
 }

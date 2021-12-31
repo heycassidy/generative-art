@@ -7,7 +7,7 @@ export default class PricklyPearLSystemInterpreter {
 
     this.settings = {...{
       startingSegmentLength: 100,
-      source: null
+      source: null,
     }, ...settings }
 
     this.cladodeLength = this.settings.startingSegmentLength
@@ -55,7 +55,7 @@ export default class PricklyPearLSystemInterpreter {
 
   get interpreter() {
     const { paper } = this.paper
-    const { source } = this.settings
+    const { source, flat } = this.settings
     let { cladodeLength } = this
 
     const rootCladode = () => {
@@ -82,8 +82,6 @@ export default class PricklyPearLSystemInterpreter {
         width: (0.6311 * cladodeLength) - 5.25,
         source
       })
-
-      cladode.draw()
 
       this.addCladode(cladode)
       this.addGrowthOrientation([0.45, 0.55])
@@ -118,7 +116,7 @@ export default class PricklyPearLSystemInterpreter {
         source
       })
 
-      cladode.draw()
+      // cladode.draw()
 
       this.addCladode(cladode)
       this.addGrowthOrientation([0.47, 0.53])
@@ -167,6 +165,7 @@ export default class PricklyPearLSystemInterpreter {
 
       }
 
+      return this.cladodes
     }.bind(this)
   }
 }

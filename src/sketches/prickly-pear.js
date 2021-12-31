@@ -17,6 +17,8 @@ export default class PricklyPear {
     }, ...settings }
 
     this.settings.source = !!this.settings.seed ? randomLcg(this.settings.seed) : null
+
+    this.group = new paper.Group()
   }
 
   get zoomFactor() {
@@ -59,6 +61,7 @@ export default class PricklyPear {
 
   drawCactus() {
     const { paper } = this.paper
+    const { group } = this
     const { source, printHeight, printDPI } = this.settings
     
     let pricklyPearLSystem = new LSystem('P[-X][X][+X]', [
@@ -73,25 +76,15 @@ export default class PricklyPear {
         'P',
       ]]
     ], source)
-    // let pricklyPearLSystem = new LSystem('P[-X][X][+X]', [
-    //   ['X', [
-    //     'P[-X][+X]',
-    //     'P[-X][+X]',
-    //     'P[-X][+X][X]',
-    //     'P[-X][+X][X]',
-    //     'P[-X][+X][X][-X]',
-    //   ]],
-    //   ['P', [
-    //     'P',
-    //   ]]
-    // ], source)
 
     let interpreter = new PricklyPearLSystemInterpreter(paper, {
       startingSegmentLength: inchToPx(printHeight * 0.382, printDPI),
       source
     })
 
-    pricklyPearLSystem.render(interpreter, 3)
+    let finalCladodes = pricklyPearLSystem.render(interpreter, 3)
+
+    group.addChildren(finalCladodes.map(c => c.draw()))
   }
 
 
