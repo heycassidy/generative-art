@@ -12,9 +12,7 @@ console.log(`seed used: ${seed}`)
 export default function paperCanvas(node) {
   paper.setup(node);
 
-  let pricklyPearDrawing = new PricklyPear(paper, {
-    seed
-  })
+  let pricklyPearDrawing = new PricklyPear(paper, { seed })
 
   pricklyPearDrawing.render()
 }

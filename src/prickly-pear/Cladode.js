@@ -12,7 +12,6 @@ class Cladode extends Branch {
     }, ...settings }
 
     this._segments = this.segments
-    this._colors = this.colors
     this.id = id
 
     this.init()
@@ -53,25 +52,6 @@ class Cladode extends Branch {
     ]
   }
 
-  get colors() {
-    const paper = this.paper
-    const { source } = this.settings
-    
-    const hue = 80
-    const saturation = 0.6
-    const brightness = 0.6
-
-    return {
-      surface: new paper.Color({ hue, saturation, brightness }),
-      stroke: new paper.Color({
-        hue: 317,
-        saturation: 0.9,
-        brightness: 0.15
-      }),
-      tubercles: new paper.Color({ hue: 60, saturation: 0.80, brightness: 0.35 })
-    }
-  }
-
   growthLocation(t = 0.5, length = 300) {
     const paper = this.paper
     const path = this.mainShape
@@ -109,13 +89,13 @@ class Cladode extends Branch {
 
   computeSurfaceTubercles() {
     const paper = this.paper
-    const { source } = this.settings
+    const { source, palette } = this.settings
     const { mainShape } = this
     const { bounds } = mainShape
 
     let tubercles = new paper.CompoundPath({
       name: 'surfaceTubercles',
-      fillColor: this._colors.stroke,
+      fillColor: palette.dark,
       // blendMode: 'multiply'
     })
     tubercles.remove()
@@ -157,7 +137,7 @@ class Cladode extends Branch {
 
   computeMainShape() {
     const paper = this.paper
-    const { printDPI } = this.settings
+    const { printDPI, palette } = this.settings
 
     let path = new paper.Path({
       segments: this._segments,
@@ -165,10 +145,10 @@ class Cladode extends Branch {
       name: 'mainShape'
     });
 
-    path.fillColor = this._colors.surface
+    path.fillColor = palette.cactus
     // path.shadowColor = new paper.Color({ hue: 160, saturation: 1, brightness: 0.4, alpha: 1 }),
     // path.shadowBlur = path.length * 0.125
-    path.strokeColor = this._colors.stroke
+    path.strokeColor = palette.dark
     path.strokeScaling = false
     path.strokeWidth = inchToPx(0.0625, printDPI)
 

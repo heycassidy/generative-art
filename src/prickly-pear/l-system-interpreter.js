@@ -2,8 +2,10 @@ import { clamp, TAU, degreesToRadians, seededRandomNormal, inchToPx } from "../h
 import Cladode from "./Cladode.js"
 
 export default class PricklyPearLSystemInterpreter {
-  constructor(paper, settings) {
+  constructor(paper, settings, segmentDefinition) {
     this.paper = paper
+
+    this.segmentDefinition = segmentDefinition
 
     this.settings = {...{
       startingSegmentLength: 100,
@@ -53,13 +55,19 @@ export default class PricklyPearLSystemInterpreter {
     this.growthOrientations.push(this.savedGrowthOrientations.pop())
   }
 
+  newSegment(Klass) {
+    return new (Klass.bind.apply(Klass, arguments))();
+  }
+
   get interpreter() {
     const { source, printDPI } = this.settings
-    let { cladodeLength } = this
+    let { cladodeLength, segmentDefinition } = this
 
     const rootCladode = (id) => {
       const paper = this.paper
 
+      let basePoint = new paper.Point(paper.view.bounds.bottomCenter.x, paper.view.bounds.bottomCenter.y + cladodeLength * 0.1)
+      
       let angle = seededRandomNormal({
         expectedValue: 0,
         standardDeviation: 0.2,
@@ -73,13 +81,12 @@ export default class PricklyPearLSystemInterpreter {
       })()
 
       length = clamp(length, cladodeLength * 0.5, cladodeLength)
-      
-      let cladode = new Cladode(paper, {
-        basePoint: new paper.Point(paper.view.bounds.bottomCenter.x, paper.view.bounds.bottomCenter.y + cladodeLength * 0.1),
-        angle,
-        length,
-        width: (0.6311 * cladodeLength) - 5.25,
-        source
+
+      let width = (0.6311 * cladodeLength) - 5.25
+
+      let cladode = this.newSegment(segmentDefinition.klass, paper, {
+        ...segmentDefinition.settings,
+        ...{ basePoint, angle, length, width, source }
       }, id)
 
       this.addCladode(cladode)
@@ -87,8 +94,9 @@ export default class PricklyPearLSystemInterpreter {
     }
 
     const newCladode = (id) => {
-      const paper = this.paper
-      const parent = this.lastCladode
+      const { paper, lastCladode: parent, segmentDefinition } = this
+      // const paper = this.paper
+      // const parent = this.lastCladode
       const growthOrientation = this.lastGrowthOrientation
 
       let sizeFactor = clamp(seededRandomNormal({
@@ -105,14 +113,13 @@ export default class PricklyPearLSystemInterpreter {
         source
       })()
 
-      let cladodeLength = clamp(parent.length * sizeFactor, inchToPx(1, printDPI), parent.length * 0.8)
+      let length = clamp(parent.length * sizeFactor, inchToPx(1, printDPI), parent.length * 0.8)
 
-      let cladode = new Cladode(paper, {
-        basePoint: growthLocation.point,
-        angle,
-        length: cladodeLength,
-        width: (0.6311 * cladodeLength) - 5.25,
-        source
+      let width = (0.6311 * length) - 5.25
+
+      let cladode = this.newSegment(segmentDefinition.klass, paper, {
+        ...segmentDefinition.settings,
+        ...{ basePoint: growthLocation.point, angle, length, width, source }
       }, id)
 
       this.addCladode(cladode)

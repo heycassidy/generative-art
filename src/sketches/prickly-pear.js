@@ -1,8 +1,9 @@
 import { randomLcg } from 'd3-random';
 import LSystem from "../helpers/l-system.js"
 import PricklyPearLSystemInterpreter from "../prickly-pear/l-system-interpreter.js"
-import { inchToPx, seededRandomNormal } from "../helpers/math.js"
+import { inchToPx, seededRandomInteger, seededRandomNormal } from "../helpers/math.js"
 import BumpyShape from '../prickly-pear/BumpyShape.js';
+import Cladode from '../prickly-pear/Cladode.js';
 
 export default class PricklyPear {
   constructor(paper, settings) {
@@ -20,10 +21,69 @@ export default class PricklyPear {
     this.settings.source = !!this.settings.seed ? randomLcg(this.settings.seed) : null
 
     this.group = new paper.Group()
+
+    this.palettes = this.defaultPalettes()
+    this.randomizedPalette = this.randomPalette()
   }
 
   get zoomFactor() {
     return 1
+  }
+
+  defaultPalettes() {
+    const { paper } = this.paper
+    let hsbColor = this.hsbColor.bind(this)
+    
+    return [
+      {
+        dark: hsbColor(271, 83, 20),
+        background: hsbColor(27, 76, 91),
+        cactus: hsbColor(147, 44, 52)
+      },
+      {
+        dark: hsbColor(50, 92, 15),
+        cactus: hsbColor(169, 38, 50),
+        background: hsbColor(50, 19, 63)
+      },
+      {
+        dark: hsbColor(196, 72, 13),
+        background: hsbColor(316, 35, 83),
+        cactus: hsbColor(76, 32, 46)
+      },
+    ]
+  }
+
+  hsbColor(hue, saturation, brightness) {
+    const { paper } = this.paper
+
+    return new paper.Color({
+      hue,
+      saturation: saturation * 0.01,
+      brightness: brightness * 0.01,
+    })
+  }
+
+  randomPalette() {
+    const { source } = this.settings
+
+    return this.palettes[seededRandomInteger({
+      min: 0,
+      max: this.palettes.length,
+      source
+    })()]
+  }
+  get randomizedPalette() {
+    return this._randomizedPalette
+  }
+  set randomizedPalette(palette) {
+    this._randomizedPalette = palette
+  }
+
+  get palettes() {
+    return this._palettes
+  }
+  set palettes(palettes) {
+    this._palettes = palettes
   }
 
   pageSetup() {
@@ -90,6 +150,11 @@ export default class PricklyPear {
       startingSegmentLength: inchToPx(printHeight * 0.382, printDPI),
       printDPI,
       source
+    }, {
+      klass: Cladode,
+      settings: {
+        palette: this.randomizedPalette
+      }
     })
 
     let finalCladodes = pricklyPearLSystem.render(interpreter, 3).sort((a, b) => b.id - a.id)
@@ -101,6 +166,8 @@ export default class PricklyPear {
     const { paper } = this.paper
     const { group } = this
     const { source, printDPI } = this.settings
+
+    let palette = this.randomizedPalette
 
     let bounds = paper.view.bounds
 
@@ -114,25 +181,16 @@ export default class PricklyPear {
     middleHeight = bounds.height * seededRandomNormal({ expectedValue: 0.618, standardDeviation: 0.05 })()
     middleOverlap = bounds.height * 0.025
 
-
     let topBackground = new paper.Path.Rectangle({
       from: [left, top],
       to: [right, middleHeight + middleOverlap],
-      fillColor: new paper.Color({
-        hue: 317,
-        saturation: 0.5,
-        brightness: 0.61
-      })
+      fillColor: palette.background
     })
     
     let bottomBackground = new paper.Path.Rectangle({
       from: [left - 20, middleHeight],
       to: [right + 20, bottom],
-      fillColor: new paper.Color({
-        hue: 317,
-        saturation: 0.9,
-        brightness: 0.15
-      })
+      fillColor: palette.dark
     })
     
     topBackground = new BumpyShape(topBackground, {
