@@ -1,22 +1,19 @@
-import { TAU, clamp, radiansToDegrees, degreesToRadians, seededRandomUniform, seededRandomNormal, polarToCartesian } from "../helpers/math.js"
+import { TAU, mod, clamp, radiansToDegrees, degreesToRadians, seededRandomUniform, seededRandomNormal, polarToCartesian, inchToPx } from "../helpers/math.js"
 import Branch from "./Branch.js"
+import BumpyShape from "./BumpyShape.js"
 
 class Cladode extends Branch {
-  constructor(paper, settings) {
+  constructor(paper, settings, id) {
     super(paper, settings)
 
     this.settings = {...{
       width: 50,
+      printDPI: 300
     }, ...settings }
 
     this._segments = this.segments
     this._colors = this.colors
-
-    this.group = new paper.Group()
-
-    this.mainShape = this.computeMainShape()
-    this.surfaceTubercles = this.computeSurfaceTubercles()
-    this.edgeTubercles = this.computeEdgeTubercles()
+    this.id = id
 
     this.init()
   }
@@ -66,7 +63,11 @@ class Cladode extends Branch {
 
     return {
       surface: new paper.Color({ hue, saturation, brightness }),
-      edge: new paper.Color({ hue: hue + 5, saturation, brightness: brightness - 0.1 }),
+      stroke: new paper.Color({
+        hue: 317,
+        saturation: 0.9,
+        brightness: 0.15
+      }),
       tubercles: new paper.Color({ hue: 60, saturation: 0.80, brightness: 0.35 })
     }
   }
@@ -114,26 +115,26 @@ class Cladode extends Branch {
 
     let tubercles = new paper.CompoundPath({
       name: 'surfaceTubercles',
-      fillColor: this._colors.surface,
-      blendMode: 'multiply'
+      fillColor: this._colors.stroke,
+      // blendMode: 'multiply'
     })
     tubercles.remove()
 
-    let tubercle = new paper.Path.Circle({ radius: mainShape.length * 0.005 })
+    let tubercle = new paper.Path.Circle({ radius: mainShape.length * 0.003 })
     tubercle.remove()
 
     let tubercleDefinition = new paper.SymbolDefinition(tubercle)
 
-    for (let i = 0; i < 300; i += 1) {
+    for (let i = 0; i < 200; i += 1) {
       let theta = i * degreesToRadians(137.5)
-      let r = bounds.height * 0.08 * Math.sqrt(i)
+      let r = bounds.height * 0.07 * Math.sqrt(i)
       let cartesian = polarToCartesian(r, theta)
 
       if (cartesian.y > bounds.bottom) { continue }
 
       let point = [
-        seededRandomNormal({ expectedValue: cartesian.x, standardDeviation: mainShape.length * 0.001, source })(),
-        seededRandomNormal({ expectedValue: cartesian.y, standardDeviation: mainShape.length * 0.001, source })(),
+        seededRandomNormal({ expectedValue: cartesian.x, standardDeviation: mainShape.length * 0.0028, source })(),
+        seededRandomNormal({ expectedValue: cartesian.y, standardDeviation: mainShape.length * 0.0028, source })(),
       ]
 
       if (mainShape.contains([...point])) {
@@ -146,55 +147,17 @@ class Cladode extends Branch {
 
     return tubercles
   }
-  computeEdgeTubercles() {
-    const paper = this.paper
-    const { source } = this.settings
-    const { mainShape } = this
-    const { bounds } = mainShape
 
-    let tubercles = new paper.CompoundPath({
-      name: 'edgeTubercles',
-      fillColor: this._colors.surface,
-      blendMode: 'multiply'
-    })
-    tubercles.remove()
-
-    let tubercle = new paper.Path.Circle({ radius: mainShape.length * 0.005 })
-    tubercle.remove()
-
-    let tubercleDefinition = new paper.SymbolDefinition(tubercle)
-
-    let distanceBetweenEdgePoints = seededRandomNormal({
-      expectedValue: 0.08,
-      standardDeviation: 0.01,
-      source
-    })
-
-    // Draw edge tubercles
-    for (let i = 0; i <= 1; i += distanceBetweenEdgePoints()) {
-      let instance = tubercleDefinition.place()
-      instance.position = mainShape.getPointAt(mainShape.length * i)
-      instance.remove()
-      tubercles.addChild(instance)
-    }
-
-    return tubercles
-  }
   get surfaceTubercles() {
     return this._surfaceTubercles
   }
   set surfaceTubercles(tubercles) {
     this._surfaceTubercles = tubercles
   }
-  get edgeTubercles() {
-    return this._edgeTubercles
-  }
-  set edgeTubercles(tubercles) {
-    this._edgeTubercles = tubercles
-  }
 
   computeMainShape() {
     const paper = this.paper
+    const { printDPI } = this.settings
 
     let path = new paper.Path({
       segments: this._segments,
@@ -203,8 +166,11 @@ class Cladode extends Branch {
     });
 
     path.fillColor = this._colors.surface
-    path.shadowColor = new paper.Color({ hue: 160, saturation: 1, brightness: 0.4, alpha: 1 }),
-    path.shadowBlur = path.length * 0.125
+    // path.shadowColor = new paper.Color({ hue: 160, saturation: 1, brightness: 0.4, alpha: 1 }),
+    // path.shadowBlur = path.length * 0.125
+    path.strokeColor = this._colors.stroke
+    path.strokeScaling = false
+    path.strokeWidth = inchToPx(0.0625, printDPI)
 
     path.smooth({ type: 'continuous', from: 1, to: 5 })
     path.remove()
@@ -219,18 +185,24 @@ class Cladode extends Branch {
   }
 
   init() {
-    const { start, group } = this
-    const { angle } = this.settings
+    const { start, paper } = this
+    const { angle, source } = this.settings
 
-    group.addChild(this.edgeTubercles)
-    group.addChild(this.mainShape)
-    group.addChild(this.surfaceTubercles)
+    this.group = new paper.Group()
 
-    group.pivot = this.mainShape.bounds.bottomCenter
-    group.position = start
-    group.rotate(radiansToDegrees(angle))
+    this.mainShape = this.computeMainShape()
+    this.mainShape = new BumpyShape(this.mainShape, { source, startingIndex: 1, endingIndex: -1 })
 
-    group.remove()
+    this.surfaceTubercles = this.computeSurfaceTubercles()
+
+    this.group.addChild(this.mainShape)
+    this.group.addChild(this.surfaceTubercles)
+
+    this.group.pivot = this.mainShape.bounds.bottomCenter
+    this.group.position = start
+    this.group.rotate(radiansToDegrees(angle))
+
+    this.group.remove()
   }
   
   draw() {

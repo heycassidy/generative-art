@@ -1,4 +1,4 @@
-import { clamp, TAU, degreesToRadians, seededRandomNormal } from "../helpers/math.js"
+import { clamp, TAU, degreesToRadians, seededRandomNormal, inchToPx } from "../helpers/math.js"
 import Cladode from "./Cladode.js"
 
 export default class PricklyPearLSystemInterpreter {
@@ -54,11 +54,10 @@ export default class PricklyPearLSystemInterpreter {
   }
 
   get interpreter() {
-    const { paper } = this.paper
-    const { source, flat } = this.settings
+    const { source, printDPI } = this.settings
     let { cladodeLength } = this
 
-    const rootCladode = () => {
+    const rootCladode = (id) => {
       const paper = this.paper
 
       let angle = seededRandomNormal({
@@ -81,22 +80,22 @@ export default class PricklyPearLSystemInterpreter {
         length,
         width: (0.6311 * cladodeLength) - 5.25,
         source
-      })
+      }, id)
 
       this.addCladode(cladode)
       this.addGrowthOrientation([0.45, 0.55])
     }
 
-    const newCladode = () => {
+    const newCladode = (id) => {
       const paper = this.paper
       const parent = this.lastCladode
       const growthOrientation = this.lastGrowthOrientation
 
       let sizeFactor = clamp(seededRandomNormal({
-        expectedValue: -0.02 * Math.pow(this.savedCladodes.length, 2) + 0.8,
-        standardDeviation: 0.2,
+        expectedValue: -0.02 * Math.pow(this.savedCladodes.length, 2) + 0.7,
+        standardDeviation: 0.1,
         source
-      })(), 0.3, 0.8)
+      })(), 0.3, 0.9)
 
       let growthLocation = parent.randomGrowthLocation(growthOrientation)
 
@@ -106,7 +105,7 @@ export default class PricklyPearLSystemInterpreter {
         source
       })()
 
-      let cladodeLength = clamp(parent.length * sizeFactor, 30, 1000)
+      let cladodeLength = clamp(parent.length * sizeFactor, inchToPx(1, printDPI), parent.length * 0.8)
 
       let cladode = new Cladode(paper, {
         basePoint: growthLocation.point,
@@ -114,13 +113,10 @@ export default class PricklyPearLSystemInterpreter {
         length: cladodeLength,
         width: (0.6311 * cladodeLength) - 5.25,
         source
-      })
-
-      // cladode.draw()
+      }, id)
 
       this.addCladode(cladode)
       this.addGrowthOrientation([0.47, 0.53])
-
     }
 
     const rotateLeft = () => {
@@ -141,14 +137,14 @@ export default class PricklyPearLSystemInterpreter {
       this.restoreLastSavedGrowthOrientation()
     }
 
-    return function(current, previous) {
+    return function(current, previous, iterationNumber) {
       let parent = this.lastCladode
 
       if (!parent) {
-        rootCladode()
+        rootCladode(iterationNumber)
 
       } else if (current === "P" && !!parent) {
-        newCladode()
+        newCladode(iterationNumber)
         
       } else if (current === "-") {
         rotateLeft()

@@ -39,7 +39,7 @@ export default class LSystem {
     let segments
     
     for (let i = 0; i < axiom.length; i++) {
-      segments = interpreter(axiom[i], axiom[i - 1])
+      segments = interpreter(axiom[i], axiom[i - 1], i)
     }
 
     return segments
