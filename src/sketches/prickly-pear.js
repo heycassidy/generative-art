@@ -125,6 +125,7 @@ export default class PricklyPear {
     const { group } = this
     const { source, printHeight, printDPI } = this.settings
     
+    // let pricklyPearLSystem = new LSystem('P', [
     let pricklyPearLSystem = new LSystem('P[-X][X][+X]', [
       ['X', [
         'P[-X][+X]',

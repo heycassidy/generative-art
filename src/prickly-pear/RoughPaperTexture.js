@@ -12,8 +12,6 @@ export default class RoughPaperTexture {
       resolution:  500,
       source: null
     }, ...settings }
-
-    this.simplex = new SimplexNoise(this.settings.source)
   }
 
   render() {

@@ -1,6 +1,7 @@
 import { TAU, mod, clamp, radiansToDegrees, degreesToRadians, seededRandomUniform, seededRandomNormal, polarToCartesian, inchToPx } from "../helpers/math.js"
 import Branch from "./Branch.js"
 import BumpyShape from "./BumpyShape.js"
+import Tubercle from "./Tubercle.js"
 
 class Cladode extends Branch {
   constructor(paper, settings, id) {
@@ -93,35 +94,31 @@ class Cladode extends Branch {
     const { mainShape } = this
     const { bounds } = mainShape
 
-    let tubercles = new paper.CompoundPath({
-      name: 'surfaceTubercles',
-      fillColor: palette.dark,
-      // blendMode: 'multiply'
-    })
-    tubercles.remove()
+    let tubercles = new paper.Group({ name: 'surfaceTubercles' })
 
-    let tubercle = new paper.Path.Circle({ radius: mainShape.length * 0.003 })
-    tubercle.remove()
+    let tubercleDensity = 0.06
 
-    let tubercleDefinition = new paper.SymbolDefinition(tubercle)
-
-    for (let i = 0; i < 200; i += 1) {
+    for (let i = 0; i < 400; i += 1) {
       let theta = i * degreesToRadians(137.5)
-      let r = bounds.height * 0.07 * Math.sqrt(i)
+      let r = bounds.height * tubercleDensity * Math.sqrt(i)
       let cartesian = polarToCartesian(r, theta)
 
       if (cartesian.y > bounds.bottom) { continue }
 
       let point = [
-        seededRandomNormal({ expectedValue: cartesian.x, standardDeviation: mainShape.length * 0.0028, source })(),
-        seededRandomNormal({ expectedValue: cartesian.y, standardDeviation: mainShape.length * 0.0028, source })(),
+        seededRandomNormal({ expectedValue: cartesian.x, standardDeviation: mainShape.length * 0.0035, source })(),
+        seededRandomNormal({ expectedValue: cartesian.y, standardDeviation: mainShape.length * 0.0035, source })(),
       ]
 
-      if (mainShape.contains([...point])) {
-        let instance = tubercleDefinition.place()
-        instance.position = [...point]
-        instance.remove()
-        tubercles.addChild(instance)
+      let tubercle = new Tubercle(paper, {
+        center: new paper.Point([...point]),
+        size: mainShape.length * 0.01,
+        source
+      })
+      tubercle.remove()
+
+      if (mainShape.contains([...point]) && !tubercle.intersects(mainShape)) {
+        tubercles.addChild(tubercle)
       }
     }
 
@@ -146,8 +143,6 @@ class Cladode extends Branch {
     });
 
     path.fillColor = palette.cactus
-    // path.shadowColor = new paper.Color({ hue: 160, saturation: 1, brightness: 0.4, alpha: 1 }),
-    // path.shadowBlur = path.length * 0.125
     path.strokeColor = palette.dark
     path.strokeScaling = false
     path.strokeWidth = inchToPx(0.0625, printDPI)
