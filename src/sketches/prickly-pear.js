@@ -1,16 +1,16 @@
-import { randomLcg } from 'd3-random';
+import { alea } from 'seedrandom';
 import LSystem from "../helpers/l-system.js"
 import PricklyPearLSystemInterpreter from "../prickly-pear/l-system-interpreter.js"
 import { inchToPx, seededRandomInteger, seededRandomNormal } from "../helpers/math.js"
-import BumpyShape from '../prickly-pear/BumpyShape.js';
 import Cladode from '../prickly-pear/Cladode.js';
+import BackgroundRectangle from '../prickly-pear/BackgroundRectangle.js';
 
 export default class PricklyPear {
   constructor(paper, settings) {
     this.paper = paper
 
     this.settings = {...{
-      printDPI: 400,
+      printDPI: 300,
       printWidth: 11.25,
       printHeight: 14.25,
       bleedSize: 0.125,
@@ -18,7 +18,7 @@ export default class PricklyPear {
       seed: null
     }, ...settings }
 
-    this.settings.source = !!this.settings.seed ? randomLcg(this.settings.seed) : null
+    this.settings.source = !!this.settings.seed ? new alea(this.settings.seed) : null
 
     this.group = new paper.Group()
 
@@ -36,19 +36,19 @@ export default class PricklyPear {
     
     return [
       {
-        dark: hsbColor(271, 83, 20),
-        background: hsbColor(27, 76, 91),
-        cactus: hsbColor(147, 44, 52)
+        cactus: hsbColor(99, 32, 67),
+        dark: hsbColor(0, 0, 15),
+        background: hsbColor(18, 50, 87),
       },
       {
-        dark: hsbColor(50, 92, 15),
-        cactus: hsbColor(169, 38, 50),
-        background: hsbColor(50, 19, 63)
+        cactus: hsbColor(244, 42, 89),
+        dark: hsbColor(0, 0, 15),
+        background: hsbColor(240, 20, 86),
       },
       {
-        dark: hsbColor(196, 72, 13),
-        background: hsbColor(316, 35, 83),
-        cactus: hsbColor(76, 32, 46)
+        cactus: hsbColor(205, 49, 93),
+        dark: hsbColor(0, 0, 15),
+        background: hsbColor(57, 50, 86),
       },
     ]
   }
@@ -178,47 +178,22 @@ export default class PricklyPear {
     bottom = bounds.bottom - margin
     left = bounds.left + margin
     right = bounds.right - margin
-    middleHeight = bounds.height * seededRandomNormal({ expectedValue: 0.618, standardDeviation: 0.05 })()
-    middleOverlap = bounds.height * 0.025
+    middleHeight = bounds.height * seededRandomNormal({ expectedValue: 0.618, standardDeviation: 0.05, source })()
+    middleOverlap = bounds.height * -0.00125
 
-    let topBackground = new paper.Path.Rectangle({
+    let topBackground = new BackgroundRectangle(paper, {
       from: [left, top],
       to: [right, middleHeight + middleOverlap],
-      fillColor: palette.background
-    })
-    
-    let bottomBackground = new paper.Path.Rectangle({
-      from: [left - 20, middleHeight],
-      to: [right + 20, bottom],
-      fillColor: palette.dark
-    })
-    
-    topBackground = new BumpyShape(topBackground, {
-      startingIndex: 0,
-      endingIndex: 0,
-      bumpHeightFactor: 0.00025,
-      bumpHeightVariance: 0.00025,
-      bumpTightnessFactor: 0.05,
-      bumpTightnessVariance: 0.05,
-      bumpDistributionVariance: 0.25,
-      subdivisionAmount: 100,
-      normalSign: 1,
+      fillColor: palette.background,
       source
     })
 
-    bottomBackground = new BumpyShape(bottomBackground, {
-      startingIndex: 0,
-      endingIndex: 0,
-      bumpHeightFactor: 0.00025,
-      bumpHeightVariance: 0.00025,
-      bumpTightnessFactor: 0.05,
-      bumpTightnessVariance: 0.05,
-      bumpDistributionVariance: 0.25,
-      subdivisionAmount: 100,
-      normalSign: 1,
+    let bottomBackground = new BackgroundRectangle(paper, {
+      from: [left, middleHeight],
+      to: [right, bottom],
+      fillColor: palette.dark,
       source
     })
-
 
     topBackground.remove()
     bottomBackground.remove()

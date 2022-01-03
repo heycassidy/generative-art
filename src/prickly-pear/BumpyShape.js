@@ -16,11 +16,9 @@ export default class BumpyShape {
       normalSign: -1,
       source: null
     }, ...settings }
-
-    return this.bumpify()
   }
 
-  bumpify() {
+  render() {
     const { path } = this
     const {
       subdivisionAmount,
@@ -56,7 +54,7 @@ export default class BumpyShape {
     })
 
     // subdivide
-    subdivide: for (let n = 1; n < subdivisionAmount; n++) {
+    for (let n = 1; n < subdivisionAmount; n++) {
       let offset = Math.abs((startingOffset - endingOffset) * n / subdivisionAmount) + startingOffset + seededRandomNormal({
         expectedValue: 0,
         standardDeviation: bumpDistributionVariance * path.length,
@@ -90,6 +88,8 @@ export default class BumpyShape {
 
       segment.point = segment.point.add(normal)
     })
+
+    path.remove()
 
     return path
   }

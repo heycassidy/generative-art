@@ -171,7 +171,7 @@ class Cladode extends Branch {
     this.group = new paper.Group()
 
     this.mainShape = this.computeMainShape()
-    this.mainShape = new BumpyShape(this.mainShape, { source, startingIndex: 1, endingIndex: -1 })
+    this.mainShape = new BumpyShape(this.mainShape, { source, startingIndex: 1, endingIndex: -1 }).render()
 
     this.surfaceTubercles = this.computeSurfaceTubercles()
 

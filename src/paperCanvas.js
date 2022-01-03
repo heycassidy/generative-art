@@ -1,9 +1,11 @@
 
 import { paper } from 'paper';
 import PricklyPear from './sketches/prickly-pear.js'
-import { randomLcg } from 'd3-random';
+import { alea } from 'seedrandom';
 
-let seed = Math.random()
+let prng = new alea(Math.random())
+
+let seed = prng()
 // let seed = 0.9124023119688898
 // let seed = 0.6443698578192487
 
